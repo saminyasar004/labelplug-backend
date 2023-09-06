@@ -10,10 +10,10 @@ const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
-const dotenv = require("dotenv");
-const notFoundMiddleware = require("../middleware/notFound");
-const errorController = require("../controller/error");
-const userRouter = require("../route/user");
+const dotenv = require("dotenv").config(__dirname);
+const notFoundMiddleware = require("../middleware/notFound.middleware");
+const errorController = require("../controller/error.controller");
+const userRouter = require("../route/user.route");
 
 // Express app
 const app = express();
@@ -23,7 +23,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(morgan("dev"));
-dotenv.config(path.resolve(__dirname, "../../"));
 
 // test route
 app.get("/health", (_req, res) => {

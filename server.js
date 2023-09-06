@@ -7,11 +7,9 @@
 
 // Dependency
 const http = require("http");
-const dotenv = require("dotenv");
+const dotenv = require("dotenv").config(__dirname);
 const app = require("./src/app/app");
 const db = require("./src/db/db");
-
-dotenv.config(__dirname);
 
 // Create just the http server from the express app
 const server = http.createServer(app);

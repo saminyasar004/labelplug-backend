@@ -8,9 +8,7 @@
 // Dependency
 const path = require("path");
 const { Sequelize } = require("sequelize");
-const dotenv = require("dotenv");
-
-dotenv.config(path.resolve(__dirname, "../../"));
+const dotenv = require("dotenv").config(__dirname);
 
 // Module scaffolding
 const db = {
