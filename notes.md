@@ -56,3 +56,10 @@ The system can only contain one admin. The system admin will only can create at 
 1. `state`
 1. `zipCode`
 1. `country`
+
+## Status
+
+-   [x] Admin Register, Login, Update functionality
+-   [x] User Register, Login, Update functionality
+-   [ ] Label Create, Read, Update, Delete functionality
+-   [ ] Adress Create, Read, Update, Delete functionality

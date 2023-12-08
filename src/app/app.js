@@ -14,6 +14,7 @@ const dotenv = require("dotenv").config(__dirname);
 const notFoundMiddleware = require("../middleware/notFound.middleware");
 const errorController = require("../controller/error.controller");
 const userRouter = require("../route/user.route");
+const adminRouter = require("../route/admin.route");
 
 // Express app
 const app = express();
@@ -31,6 +32,9 @@ app.get("/health", (_req, res) => {
         message: "OK",
     });
 });
+
+// Admin route
+app.use("/admin", adminRouter);
 
 // User route
 app.use("/user", userRouter);

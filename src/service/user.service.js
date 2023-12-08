@@ -6,8 +6,8 @@
  */
 
 // Dependency
-const db = require("../db/db");
-const User = require("../model/User");
+const User = require("../model/user.model");
+const bcrypt = require("bcrypt");
 
 // Module scaffolding
 const userService = {};
@@ -42,12 +42,12 @@ userService.isEmailUnique = (email) => {
 /**
  * Register a new user into database
  *
- * @param {String} fullName
- * @param {String} email
- * @param {String} password
- * @param {String} companyName
- * @param {String} phone
- * @param {String} tosAgreement
+ * @param {String} fullName - fullname for the new user
+ * @param {String} email - email for the new user
+ * @param {String} password - password for the new user
+ * @param {String} companyName - company name for the new user
+ * @param {String} phone - phone number for the new user
+ * @param {String} tosAgreement - tosAgreement for the new user
  * @returns {Promise}
  */
 userService.registerUser = (
@@ -70,7 +70,6 @@ userService.registerUser = (
             };
 
             const user = await User.create({ ...newUserObj });
-            console.log(user);
             res(user);
         } catch (err) {
             console.log("Error occures while registering the user.");
@@ -80,22 +79,77 @@ userService.registerUser = (
     });
 };
 
+/**
+ * Login the user
+ *
+ * @param {String} email - email of the user
+ * @param {String} password - password of the user
+ * @returns {Promise}
+ */
 userService.loginUser = (email, password) => {
     return new Promise(async (res) => {
         try {
-            const user = await User.findOne({
-                where: {
-                    email: email,
-                    password: password,
-                },
-            });
+            const user = await User.findOne({ where: { email: email } }).then(
+                async function (user) {
+                    if (!user) {
+                        return null;
+                    } else {
+                        const isValidate = await user.validatePassword(
+                            password
+                        );
+                        if (isValidate) {
+                            return user;
+                        } else {
+                            return null;
+                        }
+                    }
+                }
+            );
+
             if (user) {
                 res(user);
             } else {
                 res("false");
             }
         } catch (err) {
-            console.log("Erorr occures while login the user.");
+            console.log("Error occures while login the user.");
+            console.log(err.message);
+            res(err.message);
+        }
+    });
+};
+
+/**
+ * Update the user information
+ *
+ * @param {String} email - email of the user
+ * @param {String} fullName - full name of the user
+ * @param {String} companyName - company name of the user
+ * @param {String} phone - phone number of the user
+ * @param {String} newPassword - new password of the user
+ * @returns {Promise}
+ */
+userService.updateUser = (email, fullName, companyName, phone, newPassword) => {
+    return new Promise(async (res) => {
+        try {
+            const user = await User.update(
+                {
+                    fullName,
+                    companyName,
+                    phone,
+                    password: await bcrypt.hash(newPassword, 10),
+                },
+                { where: { email: email } }
+            );
+
+            if (user.length === 1) {
+                // updated successfully
+                res(user);
+            } else {
+                res("false");
+            }
+        } catch (err) {
+            console.log("Error occures while updating the user information.");
             console.log(err.message);
             res(err.message);
         }

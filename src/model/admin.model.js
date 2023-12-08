@@ -1,8 +1,8 @@
 /**
- * Title: User Model
+ * Title: Admin Model
  * Description:
  * Author: Samin Yasar
- * Date: 19/August/2023
+ * Date: 07/December/2023
  */
 
 // Dependency
@@ -10,7 +10,7 @@ const db = require("../db/db");
 const bcrypt = require("bcrypt");
 const { DataTypes } = require("sequelize");
 
-const User = db.sequelize.define("User", {
+const Admin = db.sequelize.define("Admin", {
     id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
@@ -31,30 +31,14 @@ const User = db.sequelize.define("User", {
         type: DataTypes.STRING,
         allowNull: false,
     },
-
-    companyName: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-
-    phone: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-
-    tosAgreement: {
-        type: DataTypes.ENUM,
-        allowNull: false,
-        values: ["true", "false"],
-    },
 });
 
 // Hash the password before create
-User.beforeCreate(async (user, _options) => {
+Admin.beforeCreate(async (admin, _options) => {
     return bcrypt
-        .hash(user.password, 10)
+        .hash(admin.password, 10)
         .then((hash) => {
-            user.password = hash;
+            admin.password = hash;
         })
         .catch((err) => {
             throw new Error(err.message);
@@ -62,9 +46,9 @@ User.beforeCreate(async (user, _options) => {
 });
 
 // Validate the hashed password with the user given password
-User.prototype.validatePassword = function (password) {
+Admin.prototype.validatePassword = function (password) {
     return bcrypt.compare(password, this.password);
 };
 
 // Exports the module
-module.exports = User;
+module.exports = Admin;

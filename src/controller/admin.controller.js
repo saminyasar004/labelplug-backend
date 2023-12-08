@@ -1,32 +1,31 @@
 /**
- * Title: User Controller
+ * Title: Admin controller
  * Description:
  * Author: Samin Yasar
- * Date: 19/August/2023
+ * Date: 07/December/2023
  */
 
+// Dependency
+const adminService = require("../service/admin.service");
 const {
     validateFullName,
     validateEmail,
     validatePassword,
-    validatePhone,
     responseSender,
 } = require("../util/script");
-
-const userService = require("../service/user.service");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv").config(__dirname);
 
 // Module scaffolding
-const userController = {};
+const adminController = {};
 
 /**
- * Register a new user
+ * Register the admin
  *
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
-userController.register = async (req, res) => {
+adminController.register = async (req, res) => {
     try {
         let error = "";
 
@@ -47,25 +46,6 @@ userController.register = async (req, res) => {
                 ? req.body.password.toString().trim()
                 : null;
 
-        const companyName =
-            typeof req.body.companyName === "string"
-                ? req.body.companyName.toString().trim()
-                : null;
-
-        const phone =
-            typeof req.body.phone === "string" &&
-            validatePhone(req.body.phone.toString().trim())
-                ? req.body.phone.toString().trim()
-                : null;
-
-        const tosAgreement = ["true", "false"].includes(
-            req.body.tosAgreement.toString().trim()
-        )
-            ? req.body.tosAgreement.toString().trim() === "true"
-                ? "true"
-                : "false"
-            : null;
-
         if (!fullName) {
             error = "Please provide a valid full name.";
         } else if (!email) {
@@ -73,24 +53,9 @@ userController.register = async (req, res) => {
         } else if (!password) {
             error =
                 "Password must be atleast 8 characters long and must include a number and a special character.";
-        } else if (!companyName) {
-            error = "Please provide a valid company name.";
-        } else if (!phone) {
-            error = "Please provide a valid phone number.";
-        } else if (tosAgreement !== "true") {
-            error =
-                "Please make sure you have agree with our terms of services.";
         }
 
-        if (
-            !fullName ||
-            !email ||
-            !password ||
-            !companyName ||
-            !phone ||
-            tosAgreement !== "true" ||
-            error.length > 0
-        ) {
+        if (!fullName || !email || !password || error.length > 0) {
             responseSender(res, 400, {
                 message:
                     error.length > 0
@@ -98,23 +63,17 @@ userController.register = async (req, res) => {
                         : "Your request is not valid. Please make the request with all the required value accurately.",
             });
         } else {
-            const isEmailUnique = await userService.isEmailUnique(email);
+            const isAdminExist = await adminService.isAdminExist();
 
-            if (isEmailUnique === "false") {
+            if (isAdminExist === "true") {
                 responseSender(res, 403, {
-                    message: "Your given email is already exist. please login.",
+                    message:
+                        "An admin already exist in the system. Please login.",
                 });
             } else {
-                await userService.registerUser(
-                    fullName,
-                    email,
-                    password,
-                    companyName,
-                    phone,
-                    tosAgreement
-                );
+                await adminService.registerAdmin(fullName, email, password);
                 const token = jwt.sign(
-                    { fullName, email, companyName, phone },
+                    { fullName, email },
                     process.env.JWT_KEY,
                     {
                         expiresIn: "1d",
@@ -123,11 +82,9 @@ userController.register = async (req, res) => {
 
                 responseSender(res, 201, {
                     message: "Registration Successfull",
-                    user: {
+                    admin: {
                         fullName,
                         email,
-                        companyName,
-                        phone,
                     },
                     token,
                 });
@@ -139,12 +96,12 @@ userController.register = async (req, res) => {
 };
 
 /**
- * Login an existing user
+ * Login the admin
  *
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
-userController.login = async (req, res) => {
+adminController.login = async (req, res) => {
     try {
         let error = "";
 
@@ -165,7 +122,6 @@ userController.login = async (req, res) => {
         } else if (!password) {
             error = "Please provide a valid password.";
         }
-
         if (!email || !password || error.length > 0) {
             responseSender(res, 400, {
                 message:
@@ -174,15 +130,15 @@ userController.login = async (req, res) => {
                         : "Your request is not valid. Please make the request with all the required value accurately.",
             });
         } else {
-            const user = await userService.loginUser(email, password);
+            const admin = await adminService.loginAdmin(email, password);
 
-            if (user.id) {
+            console.log(admin);
+
+            if (admin.id) {
                 const token = jwt.sign(
                     {
-                        fullName: user.fullName,
-                        email: user.email,
-                        companyName: user.companyName,
-                        phone: user.phone,
+                        fullName: admin.fullName,
+                        email: admin.email,
                     },
                     process.env.JWT_KEY,
                     {
@@ -191,11 +147,9 @@ userController.login = async (req, res) => {
                 );
                 responseSender(res, 200, {
                     message: "Login Successfull.",
-                    user: {
-                        fullName: user.fullName,
-                        email: user.email,
-                        companyName: user.companyName,
-                        phone: user.phone,
+                    admin: {
+                        fullName: admin.fullName,
+                        email: admin.email,
                     },
                     token,
                 });
@@ -211,24 +165,24 @@ userController.login = async (req, res) => {
 };
 
 /**
- * Update an user's information
+ * Update the information of the admin
  *
  * @param {import("express").Request} req
  * @param {import("express").Response} res
  */
-userController.updateUser = async (req, res) => {
+adminController.updateAdmin = async (req, res) => {
     try {
         let error = "";
-        const userToken =
+        const adminToken =
             typeof req.headers.authorization === "string"
                 ? req.headers.authorization.toString().trim().split(" ")[1]
                 : null;
 
-        if (!userToken) {
+        if (!adminToken) {
             error = "Please provide the authorization token.";
         }
 
-        if (!userToken || error.length > 0) {
+        if (!adminToken || error.length > 0) {
             responseSender(res, 401, {
                 message:
                     error.length > 0
@@ -236,23 +190,12 @@ userController.updateUser = async (req, res) => {
                         : "Authorization Error. Please provide the authorization token.",
             });
         } else {
-            const userObj = jwt.verify(userToken, process.env.JWT_KEY);
+            const adminObj = jwt.verify(adminToken, process.env.JWT_KEY);
 
             const fullName =
                 typeof req.body.fullName === "string" &&
                 req.body.fullName.toString().trim()
                     ? req.body.fullName.toString().trim()
-                    : null;
-
-            const companyName =
-                typeof req.body.companyName === "string"
-                    ? req.body.companyName.toString().trim()
-                    : null;
-
-            const phone =
-                typeof req.body.phone === "string" &&
-                validatePhone(req.body.phone.toString().trim())
-                    ? req.body.phone.toString().trim()
                     : null;
 
             const currentPassword =
@@ -269,10 +212,6 @@ userController.updateUser = async (req, res) => {
 
             if (!fullName) {
                 error = "Please provide a valid full name.";
-            } else if (!companyName) {
-                error = "Please provide a valid company name.";
-            } else if (!phone) {
-                error = "Please provide a valid phone number.";
             } else if (!currentPassword) {
                 error =
                     "Please provide the current password to change the password.";
@@ -282,8 +221,6 @@ userController.updateUser = async (req, res) => {
 
             if (
                 !fullName ||
-                !companyName ||
-                !phone ||
                 !newPassword ||
                 !currentPassword ||
                 error.length > 0
@@ -295,24 +232,22 @@ userController.updateUser = async (req, res) => {
                             : "Your request is not valid. Please make the request with all the required value accurately.",
                 });
             } else {
-                const user = await userService.loginUser(
-                    userObj.email,
+                const admin = await adminService.loginAdmin(
+                    adminObj.email,
                     currentPassword
                 );
 
-                if (user.id) {
-                    const updateUserResult = await userService.updateUser(
-                        userObj.email,
+                if (admin.id) {
+                    const updateAdminResult = await adminService.updateAdmin(
+                        adminObj.email,
                         fullName,
-                        companyName,
-                        phone,
                         newPassword
                     );
 
-                    if (updateUserResult.length === 1) {
+                    if (updateAdminResult.length === 1) {
                         responseSender(res, 201, {
                             message:
-                                "Successfully updated the user information.",
+                                "Successfully updated the admin information.",
                         });
                     } else {
                         responseSender(res, 500, {
@@ -338,4 +273,4 @@ userController.updateUser = async (req, res) => {
 };
 
 // Export the module
-module.exports = userController;
+module.exports = adminController;
